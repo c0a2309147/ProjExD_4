@@ -36,6 +36,33 @@ def calc_orientation(org: pg.Rect, dst: pg.Rect) -> tuple[float, float]:
     norm = math.sqrt(x_diff**2+y_diff**2)
     return x_diff/norm, y_diff/norm
 
+class EMP(pg.sprite.Sprite):
+    def __init__(self, emys: pg.sprite.Group, bombs: pg.sprite.Group, screen: pg.Surface):
+        super().__init__()
+        self.emys = emys
+        self.bombs = bombs
+        self.screen = screen
+        self.duration =3
+
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        self.image.set_alpha(128)  
+        self.image.fill((255, 255, 0))
+
+        self.rect = self.image.get_rect()  
+        self.rect.topleft = (0, 0)
+
+        for emy in self.emys:
+            emy.interval = float('inf')
+            emy.image.set_alpha(128)
+
+        for bomb in self.bombs:
+            bomb.speed /= 2
+             
+    def update(self):
+        
+        self.duration -= 0.05
+        if self.duration <= 0:
+           self.kill()
 
 class Bird(pg.sprite.Sprite):
     """
@@ -220,7 +247,7 @@ class Enemy(pg.sprite.Sprite):
         if self.rect.centery > self.bound:
             self.vy = 0
             self.state = "stop"
-        self.rect.move_ip(vx, vy)
+        self.rect.move_ip(self.vx, self.vy)
 
 
 class Score:
@@ -253,6 +280,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    emps = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -263,6 +291,11 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_e:
+                if score.value >= 20:
+                       emps.add(EMP(emys, bombs, screen))
+                       score.value -= 20
+                       
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -298,6 +331,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        emps.update()  
+        emps.draw(screen) 
         score.update(screen)
         pg.display.update()
         tmr += 1
