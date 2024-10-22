@@ -23,9 +23,43 @@ def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
 
 # 目標位置に向かう方向を計算する関数
 def calc_orientation(org: pg.Rect, dst: pg.Rect) -> tuple[float, float]:
-    x_diff, y_diff = dst.centerx - org.centerx, dst.centery - org.centery
-    norm = math.sqrt(x_diff**2 + y_diff**2)
-    return x_diff / norm, y_diff / norm
+    """
+    orgから見て，dstがどこにあるかを計算し，方向ベクトルをタプルで返す
+    引数1 org：爆弾SurfaceのRect
+    引数2 dst：こうかとんSurfaceのRect
+    戻り値：orgから見たdstの方向ベクトルを表すタプル
+    """
+    x_diff, y_diff = dst.centerx-org.centerx, dst.centery-org.centery
+    norm = math.sqrt(x_diff**2+y_diff**2)
+    return x_diff/norm, y_diff/norm
+
+class EMP(pg.sprite.Sprite):
+    def __init__(self, emys: pg.sprite.Group, bombs: pg.sprite.Group, screen: pg.Surface):
+        super().__init__()
+        self.emys = emys
+        self.bombs = bombs
+        self.screen = screen
+        self.duration =3
+
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        self.image.set_alpha(128)  
+        self.image.fill((255, 255, 0))
+
+        self.rect = self.image.get_rect()  
+        self.rect.topleft = (0, 0)
+
+        for emy in self.emys:
+            emy.interval = float('inf')
+            emy.image.set_alpha(128)
+
+        for bomb in self.bombs:
+            bomb.speed /= 2
+             
+    def update(self):
+        
+        self.duration -= 0.05
+        if self.duration <= 0:
+           self.kill()
 
 class Bird(pg.sprite.Sprite):
     delta = {
@@ -235,6 +269,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    emps = pg.sprite.Group()
     gravitys = pg.sprite.Group()  # 重力場のグループ
 
     tmr = 0
@@ -250,6 +285,11 @@ def main():
                 if event.key == pg.K_RETURN and score.value >= 200:  # 重力場発動条件
                     gravitys.add(Gravity(400))  # 重力場発動
                     score.value -= 200  # スコアを200消費
+            if event.type == pg.KEYDOWN and event.key == pg.K_e:
+                if score.value >= 20:
+                       emps.add(EMP(emys, bombs, screen))
+                       score.value -= 20
+                       
         screen.blit(bg_img, [0, 0])
 
         if tmr % 200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -292,6 +332,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        emps.update()  
+        emps.draw(screen) 
         gravitys.update(bombs, emys, exps)  # 修正: gravitys を更新
         gravitys.draw(screen)  # 修正: gravitys を描画
         score.update(screen)
