@@ -69,6 +69,7 @@ class Bird(pg.sprite.Sprite):
         pg.K_RIGHT: (+1, 0),
     }
 
+
     def __init__(self, num: int, xy: tuple[int, int]):
         super().__init__()
         img0 = pg.transform.rotozoom(pg.image.load(f"fig/{num}.png"), 0, 2.0)
@@ -91,29 +92,29 @@ class Bird(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.speed = 10
-        self.state = "normal"
-        self.hyper_life = 0
 
-    def activate_hyper(self, score):
-        if score.value >= 100:  # スコアが100以上で無敵状態に
-            self.state = "hyper"
-            self.hyper_life = 500  # 無敵状態のライフ
-            score.value -= 100  # 無敵発動時にスコアを100減らす
+    def change_img(self, num: int, screen: pg.Surface):
+        """
+        こうかとん画像を切り替え，画面に転送する
+        引数1 num：こうかとん画像ファイル名の番号
+        引数2 screen：画面Surface
+        """
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/{num}.png"), 0, 2.0)
+        screen.blit(self.image, self.rect)
 
     def update(self, key_lst: list[bool], screen: pg.Surface):
 
         sum_mv = [0, 0]
+        current_speed = self.speed  # デフォルトスピードは10
+        if key_lst[pg.K_LSHIFT]:  # 左Shiftキーが押されたとき
+            current_speed = 20  # 高速化する
         for k, mv in __class__.delta.items():
             if key_lst[k]:
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
-
-        # 移動
-        self.rect.move_ip(self.speed * sum_mv[0], self.speed * sum_mv[1])
+        self.rect.move_ip(self.speed*sum_mv[0], self.speed*sum_mv[1])
         if check_bound(self.rect) != (True, True):
-            self.rect.move_ip(-self.speed * sum_mv[0], -self.speed * sum_mv[1])
-
-        # 方向に応じた画像に変更
+            self.rect.move_ip(-self.speed*sum_mv[0], -self.speed*sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
 
